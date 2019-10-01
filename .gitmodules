@@ -1,0 +1,6 @@
+[submodule "cMaze"]
+	path = cMaze
+	url = https://github.com/ejw3md/cMaze.git
+[submodule "ECL"]
+	path = ECL
+	url = https://github.com/ejw3md/ECL.git
