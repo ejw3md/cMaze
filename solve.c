@@ -83,18 +83,6 @@ MazeType ** createMaze(char * filename, int * rows, int * cols)
     return maze;
 }
 
-void printMaze(MazeType ** maze, int rows, int cols)
-{
-    for(int i=0; i<rows; i++)
-    {
-        for(int j=0; j<cols; j++)
-        {
-            printf("%d", maze[i][j].val);
-        }
-        printf("\n");
-    }
-}
-
 Cell * findStart(MazeType ** maze, int rows, int cols)
 {
     for(int i=0; i<cols; i++)
@@ -134,7 +122,6 @@ Cell * BFS(MazeType ** maze, int rows, int cols, Queue * garbageCollect)
     {
         cur = queuePop(queue);
         queuePush(garbageCollect, cur);
-        printf("%d %d\n", cur->r, cur->c);
         if(cur->r == end->r && cur->c == end->c)
         {
             found = 1;
@@ -155,7 +142,6 @@ Cell * BFS(MazeType ** maze, int rows, int cols, Queue * garbageCollect)
             }
         }
     }
-    printf("DON\n");
     freeQueue(queue);
     if(found)
         return cur;
