@@ -122,7 +122,6 @@ Cell * BFS(MazeType ** maze, int rows, int cols, Queue * garbageCollect)
     Cell * start = findStart(maze, rows, cols);
     Cell * end = findEnd(maze, rows, cols);
 
-    queuePush(garbageCollect, start);
     queuePush(garbageCollect, end);
 
     Cell * cur;
