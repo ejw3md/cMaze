@@ -1,48 +1,69 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//#include "queue.h"
+#include "ECL/ECL_queue.h"
+
+typedef struct mazeType
+{
+    int val;
+    int visited;
+}MazeType;
 
 typedef struct cell
 {
     int r;
     int c;
-    int visited;
     struct cell * prev;
 }Cell;
 
 int directions[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
-int ** createMaze(char * filename, int * rows, int * cols);
-void printMaze(int ** maze, int rows, int cols);
-Cell createCell(int r, int c);
-Cell findStart(int ** maze, int rows, int cols);
-Cell findEnd(int ** maze, int rows, int cols);
-Cell BFS(int ** maze, int rows, int cols);
+MazeType ** createMaze(char * filename, int * rows, int * cols);
+void printMaze(MazeType ** maze, int rows, int cols);
+Cell * createCell(int r, int c);
+Cell * findStart(MazeType ** maze, int rows, int cols);
+Cell * findEnd(MazeType ** maze, int rows, int cols);
+Cell * BFS(MazeType ** maze, int rows, int cols, Queue * garbageCollect);
+int isValid(int rows, int cols, int r, int c);
+void printPath(Cell * end, char * filename);
+void freeMaze(MazeType ** maze, int rows, int cols);
 
 int main(int argc, char ** argv)
 {
     int rows, cols;
-    int ** maze = createMaze(argv[1], &rows, &cols);
-    printMaze(maze, rows, cols);
+    MazeType ** maze = createMaze(argv[1], &rows, &cols);
+    Queue * garbageCollect = initQueue();
+    Cell * end = BFS(maze, rows, cols, garbageCollect);
+    printPath(end, "temp2.txt");
+    freeQueue(garbageCollect);
+    freeMaze(maze, rows, cols);
+
     return 0;
 }
 
-Cell createCell(int r, int c)
+Cell * createCell(int r, int c)
 {
-    Cell new = {r, c, 0, NULL};
+    Cell * new = malloc(sizeof(Cell));
+    new->r = r;
+    new->c = c;
+    new->prev = NULL;
     return new;
 }
 
-int ** createMaze(char * filename, int * rows, int * cols)
+int isValid(int rows, int cols, int r, int c)
+{
+    return r>=0 && r<rows && c>=0 && c<cols;
+}
+
+MazeType ** createMaze(char * filename, int * rows, int * cols)
 {
     FILE * f = fopen(filename, "r");
     int r, c;
     fscanf(f, "%d %d", &r, &c);
-    int ** maze = malloc(sizeof(int *) * r);
+    MazeType ** maze = malloc(sizeof(MazeType *) * r);
     for(int i=0; i<r; i++)
     {
-        maze[i] = malloc(sizeof(int) * c);
+        maze[i] = malloc(sizeof(MazeType) * c);
     }
 
     for(int i=0; i<r; i++)
@@ -52,7 +73,8 @@ int ** createMaze(char * filename, int * rows, int * cols)
         for(int j=0; j<c; j++)
         {
             fscanf(f, "%c", &temp);
-            maze[i][j] = temp - '0';
+            maze[i][j].val = temp - '0';
+            maze[i][j].visited = 0;
         }
 
     }
@@ -61,34 +83,102 @@ int ** createMaze(char * filename, int * rows, int * cols)
     return maze;
 }
 
-void printMaze(int ** maze, int rows, int cols)
+void printMaze(MazeType ** maze, int rows, int cols)
 {
     for(int i=0; i<rows; i++)
     {
         for(int j=0; j<cols; j++)
         {
-            printf("%d", maze[i][j]);
+            printf("%d", maze[i][j].val);
         }
         printf("\n");
     }
 }
 
-Cell findStart(int ** maze, int rows, int cols)
+Cell * findStart(MazeType ** maze, int rows, int cols)
 {
     for(int i=0; i<cols; i++)
     {
-        if(maze[0][i] == 1)
+        if(maze[0][i].val == 1)
             return createCell(0, i);
     }
     return createCell(-1, -1);
 }
 
-Cell findEnd(int ** maze, int rows, int cols)
+Cell * findEnd(MazeType ** maze, int rows, int cols)
 {
     for(int i=0; i<cols; i++)
     {
-        if(maze[rows-1][i] == 1)
+        if(maze[rows-1][i].val == 1)
             return createCell(rows-1, i);
     }
     return createCell(-1, -1);
+}
+
+Cell * BFS(MazeType ** maze, int rows, int cols, Queue * garbageCollect)
+{
+    Queue * queue = initQueue();
+
+    Cell * start = findStart(maze, rows, cols);
+    Cell * end = findEnd(maze, rows, cols);
+
+    queuePush(garbageCollect, start);
+    queuePush(garbageCollect, end);
+
+    Cell * cur;
+    int found = 0;
+
+    maze[start->r][start->c].visited = 1;
+    queuePush(queue, start);
+
+    while(!queueEmpty(queue))
+    {
+        cur = queuePop(queue);
+        queuePush(garbageCollect, cur);
+        printf("%d %d\n", cur->r, cur->c);
+        if(cur->r == end->r && cur->c == end->c)
+        {
+            found = 1;
+            break;
+        }
+
+        for(int i=0; i<4; i++)
+        {
+            int newr, newc;
+            newr = cur->r + directions[i][0];
+            newc = cur->c + directions[i][1];
+            if(isValid(rows, cols, newr, newc) && maze[newr][newc].val == 1 && !maze[newr][newc].visited)
+            {
+                Cell * new = createCell(newr, newc);
+                new->prev = cur;
+                maze[newr][newc].visited = 1;
+                queuePush(queue, new);
+            }
+        }
+    }
+    printf("DON\n");
+    freeQueue(queue);
+    if(found)
+        return cur;
+    return NULL;
+}
+
+void printPath(Cell * end, char * filename)
+{
+    FILE * f = fopen(filename, "w");
+    Cell * itr = end;
+    while(itr)
+    {
+        fprintf(f, "%d %d\n", itr->r, itr->c);
+        itr = itr->prev;
+    }
+}
+
+void freeMaze(MazeType ** maze, int rows, int cols)
+{
+    for(int i=0; i<rows; i++)
+    {
+        free(maze[i]);
+    }
+    free(maze);
 }

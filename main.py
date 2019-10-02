@@ -1,12 +1,6 @@
 import sys
 from PIL import Image
 
-
-
-
-
-
-
 def write(im):
     f = open('temp.txt', 'w')
     cols = im.size[0]
