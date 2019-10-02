@@ -30,6 +30,11 @@ void freeMaze(MazeType ** maze, int rows, int cols);
 
 int main(int argc, char ** argv)
 {
+    if(argc!= 2)
+    {
+        printf("Format of file is ./a.out <input_file>\n");
+        return 0;
+    }
     int rows, cols;
     MazeType ** maze = createMaze(argv[1], &rows, &cols);
     Queue * garbageCollect = initQueue();
